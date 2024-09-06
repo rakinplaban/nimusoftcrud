@@ -1,7 +1,155 @@
-{% extends 'crudapp\layout.html' %}
+{% extends 'crudapp/layout.html' %}
 
-{% block title %}{% endblock %}
+{% block title %}Book CRUD{% endblock %}
 
 {% block body %}
+    <div class="container mt-5">
+        <h1 class="mb-4 text-center">Book List</h1>
 
+        <form id="bookForm" class="row g-3" method="post">
+            {% csrf_token %}
+            <div class="col-md-4">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" placeholder="Enter title" required>
+            </div>
+            <div class="col-md-4">
+                <label for="author" class="form-label">Author</label>
+                <input type="text" class="form-control" id="author" placeholder="Enter author" required>
+            </div>
+            <div class="col-md-4">
+                <label for="published_date" class="form-label">Published Date</label>
+                <input type="date" class="form-control" id="published_date" required>
+            </div>
+            <div class="col-12 text-center">
+                <button type="submit" class="btn btn-primary mt-3" id="submitBtn">Add Book</button>
+            </div>
+        </form>
+        
+
+        <hr class="my-4">
+
+        <h2 class="text-center">All Books</h2>
+        <ul id="bookList" class="list-group mt-4"></ul>
+    </div>
+
+    <!-- Edit Book Modal -->
+<div class="modal fade" id="editBookModal" tabindex="-1" aria-labelledby="editBookModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editBookModalLabel">Edit Book</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editBookForm">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="editTitle" class="form-label">Title</label>
+              <input type="text" class="form-control" id="editTitle" required>
+            </div>
+            <div class="mb-3">
+              <label for="editAuthor" class="form-label">Author</label>
+              <input type="text" class="form-control" id="editAuthor" required>
+            </div>
+            <div class="mb-3">
+              <label for="editPublishedDate" class="form-label">Published Date</label>
+              <input type="date" class="form-control" id="editPublishedDate" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
+    <script>
+        $(document).ready(function() {
+    // Fetch all books
+    fetchBooks();
+
+    // Add or Update a book
+    $('#bookForm').submit(function(e) {
+        e.preventDefault();
+        let id = $('#bookForm').data('id'); // Get the id from the form data
+        let url = id ? `/update/${id}/` : '/create/'; // Decide URL based on ID
+
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: JSON.stringify({
+                title: $('#title').val(),
+                author: $('#author').val(),
+                published_date: $('#published_date').val()
+            }),
+            contentType: 'application/json',
+            success: function(data) {
+                if (id) {
+                    // Update existing book in the list
+                    $(`#book-${data.id}`).html(`${data.title} by ${data.author}, Published on ${data.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${data.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${data.id})">Delete</button>`);
+                } else {
+                    // Add new book to the list
+                    $('#bookList').append(`<li class="list-group-item" id="book-${data.id}">${data.title} by ${data.author}, Published on ${data.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${data.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${data.id})">Delete</button></li>`);
+                }
+                $('#bookForm')[0].reset(); // Reset form
+                $('#bookForm').removeData('id'); // Clear the ID
+            }
+        });
+    });
+
+    // Handle the Edit Book Modal Form Submission
+    $('#editBookForm').submit(function(e) {
+        e.preventDefault();
+        let id = $('#editBookForm').data('id'); // Get the book id stored in modal
+        $.ajax({
+            url: `/update/${id}/`,
+            method: 'POST',
+            data: JSON.stringify({
+                title: $('#editTitle').val(),
+                author: $('#editAuthor').val(),
+                published_date: $('#editPublishedDate').val()
+            }),
+            contentType: 'application/json',
+            success: function(data) {
+                // Update the book in the list
+                $(`#book-${data.id}`).html(`${data.title} by ${data.author}, Published on ${data.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${data.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${data.id})">Delete</button>`);
+                $('#editBookModal').modal('hide'); // Close modal
+            }
+        });
+    });
+});
+
+// Fetch all books
+function fetchBooks() {
+    $.get('/books/', function(data) {
+        $('#bookList').html('');
+        data.forEach(function(book) {
+            $('#bookList').append(`<li class="list-group-item" id="book-${book.id}">${book.title} by ${book.author}, Published on ${book.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${book.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${book.id})">Delete</button></li>`);
+        });
+    });
+}
+
+// Edit a book: Trigger the modal and populate with book data
+function editBook(id) {
+    $.get(`/book/${id}/`, function(book) {
+        $('#editTitle').val(book.title);
+        $('#editAuthor').val(book.author);
+        $('#editPublishedDate').val(book.published_date);
+        $('#editBookForm').data('id', id); // Store the book id in the modal
+        $('#editBookModal').modal('show'); // Show the modal
+    });
+}
+
+// Delete a book
+function deleteBook(id) {
+    $.ajax({
+        url: `/delete/${id}/`,
+        method: 'POST',
+        success: function() {
+            $(`#book-${id}`).remove();
+        }
+    });
+}
+
+    </script>
 {% endblock %}
