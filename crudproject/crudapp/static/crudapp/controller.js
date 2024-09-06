@@ -16,3 +16,8 @@ function deleteBook(id) {
         }
     });
 }
+
+// function editBook(id) {
+//     window.location.href = `/update/${id}/`;  // Ensure the correct URL is used for editing
+// }
+
