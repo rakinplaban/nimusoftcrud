@@ -1,4 +1,3 @@
-# views.py
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from .models import Book
@@ -7,7 +6,7 @@ import json
 
 def index(request):
     books = Book.objects.all()
-    return render(request, 'crudapp\index.html', {'books': books})
+    return render(request, 'crudapp/index.html', {'books': books})
 
 @csrf_exempt
 def create_book(request):

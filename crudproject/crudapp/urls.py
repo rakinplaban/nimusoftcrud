@@ -1,16 +1,10 @@
-from .views import *
-from django.urls import path   
-# from django.contrib.auth import login
-# from django.contrib.auth import logout
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('', index, name='index'),
-    # path('login/', login, name='login'),
-    # path('register/', register, name='register'),
-    # path('logout/', logout, name='logout'),
-    # path('profile/', profile, name='profile'),
-    # path('profile/update/', profile_update, name='profile_update'),
-    # path('profile/update/password/', profile_update_password, name='profile_update_password'),
-    # path('profile/update/avatar/', profile_update_avatar, name='profile_update_avatar'),
-    # path('profile/delete/', profile_delete, name='profile_delete'),
+    path('', views.index, name='index'),
+    path('create/', views.create_book, name='create_book'),
+    path('update/<int:id>/', views.update_book, name='update_book'),
+    path('delete/<int:id>/', views.delete_book, name='delete_book'),
+    path('books/', views.read_books, name='read_books'),
 ]
