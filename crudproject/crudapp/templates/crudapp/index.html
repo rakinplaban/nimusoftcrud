@@ -33,38 +33,49 @@
     </div>
 
     <!-- Edit Book Modal -->
-<div class="modal fade" id="editBookModal" tabindex="-1" aria-labelledby="editBookModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="editBookModalLabel">Edit Book</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="editBookModal" tabindex="-1" aria-labelledby="editBookModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editBookModalLabel">Edit Book</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <form id="editBookForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                  <label for="editTitle" class="form-label">Title</label>
+                  <input type="text" class="form-control" id="editTitle" required>
+                </div>
+                <div class="mb-3">
+                  <label for="editAuthor" class="form-label">Author</label>
+                  <input type="text" class="form-control" id="editAuthor" required>
+                </div>
+                <div class="mb-3">
+                  <label for="editPublishedDate" class="form-label">Published Date</label>
+                  <input type="date" class="form-control" id="editPublishedDate" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save changes</button>
+              </form>
+            </div>
+          </div>
         </div>
-        <div class="modal-body">
-          <form id="editBookForm">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label for="editTitle" class="form-label">Title</label>
-              <input type="text" class="form-control" id="editTitle" required>
-            </div>
-            <div class="mb-3">
-              <label for="editAuthor" class="form-label">Author</label>
-              <input type="text" class="form-control" id="editAuthor" required>
-            </div>
-            <div class="mb-3">
-              <label for="editPublishedDate" class="form-label">Published Date</label>
-              <input type="date" class="form-control" id="editPublishedDate" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Save changes</button>
-          </form>
-        </div>
-      </div>
     </div>
-  </div>
-  
+
+    <!--Tabular format-->
+    <div class="container">
+        <!-- <div class="row bg-light text-dark font-weight-bold">
+            <div class="col-3">Title</div>
+            <div class="col-3">Author</div>
+            <div class="col-3">Published Date</div>
+            <div class="col-3">Actions</div>
+        </div> -->
+        <div id="bookList"></div>
+    </div>
+
 
     <script>
-        $(document).ready(function() {
+       $(document).ready(function() {
     // Fetch all books
     fetchBooks();
 
@@ -84,13 +95,24 @@
             }),
             contentType: 'application/json',
             success: function(data) {
+                let rowHtml = `
+                    <div class="row mt-2 align-items-center" id="book-${data.id}">
+                        <div class="col-3">${data.title}</div>
+                        <div class="col-3">${data.author}</div>
+                        <div class="col-3">${data.published_date}</div>
+                        <div class="col-3">
+                            <button class="btn btn-warning btn-sm" onclick="editBook(${data.id})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteBook(${data.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+
                 if (id) {
-                    // Update existing book in the list
-                    $(`#book-${data.id}`).html(`${data.title} by ${data.author}, Published on ${data.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${data.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${data.id})">Delete</button>`);
+                    $(`#book-${data.id}`).replaceWith(rowHtml); // Update existing book row
                 } else {
-                    // Add new book to the list
-                    $('#bookList').append(`<li class="list-group-item" id="book-${data.id}">${data.title} by ${data.author}, Published on ${data.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${data.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${data.id})">Delete</button></li>`);
+                    $('#bookList').append(rowHtml); // Add new book row
                 }
+
                 $('#bookForm')[0].reset(); // Reset form
                 $('#bookForm').removeData('id'); // Clear the ID
             }
@@ -112,7 +134,15 @@
             contentType: 'application/json',
             success: function(data) {
                 // Update the book in the list
-                $(`#book-${data.id}`).html(`${data.title} by ${data.author}, Published on ${data.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${data.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${data.id})">Delete</button>`);
+                $(`#book-${data.id}`).html(`
+                    <div class="col-3">${data.title}</div>
+                    <div class="col-3">${data.author}</div>
+                    <div class="col-3">${data.published_date}</div>
+                    <div class="col-3">
+                        <button class="btn btn-warning btn-sm" onclick="editBook(${data.id})">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteBook(${data.id})">Delete</button>
+                    </div>
+                `);
                 $('#editBookModal').modal('hide'); // Close modal
             }
         });
@@ -122,12 +152,35 @@
 // Fetch all books
 function fetchBooks() {
     $.get('/books/', function(data) {
-        $('#bookList').html('');
+        $('#bookList').html(''); // Clear existing content
+        // Add table headers once
+        if ($('#bookList').children().length === 0) {
+            $('#bookList').append(`
+                <div class="row bg-light text-dark font-weight-bold">
+                    <div class="col-3">Title</div>
+                    <div class="col-3">Author</div>
+                    <div class="col-3">Published Date</div>
+                    <div class="col-3">Actions</div>
+                </div>
+            `);
+        }
         data.forEach(function(book) {
-            $('#bookList').append(`<li class="list-group-item" id="book-${book.id}">${book.title} by ${book.author}, Published on ${book.published_date} <button class="btn btn-warning btn-sm float-end" onclick="editBook(${book.id})">Edit</button> <button class="btn btn-danger btn-sm float-end" onclick="deleteBook(${book.id})">Delete</button></li>`);
+            let rowHtml = `
+                <div class="row mt-2 align-items-center" id="book-${book.id}">
+                    <div class="col-3">${book.title}</div>
+                    <div class="col-3">${book.author}</div>
+                    <div class="col-3">${book.published_date}</div>
+                    <div class="col-3">
+                        <button class="btn btn-warning btn-sm" onclick="editBook(${book.id})">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteBook(${book.id})">Delete</button>
+                    </div>
+                </div>
+            `;
+            $('#bookList').append(rowHtml);
         });
     });
 }
+
 
 // Edit a book: Trigger the modal and populate with book data
 function editBook(id) {
@@ -146,10 +199,11 @@ function deleteBook(id) {
         url: `/delete/${id}/`,
         method: 'POST',
         success: function() {
-            $(`#book-${id}`).remove();
+            $(`#book-${id}`).remove(); // Remove the book row
         }
     });
 }
 
-    </script>
+
+</script>
 {% endblock %}

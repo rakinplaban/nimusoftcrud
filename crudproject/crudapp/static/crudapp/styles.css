@@ -1,0 +1,12 @@
+#bookList {
+    margin-top: 20px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.col-3 {
+    flex: 1;
+}
